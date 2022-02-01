@@ -14,3 +14,7 @@ npm install express sequelize pg pg-hstore body-parser cors jsonwebtoken bcryptj
 
 4. Setup Express server by creating app.js  file
 
+5. .env and .gitignore
+
+6. 
+
