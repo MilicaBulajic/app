@@ -1,34 +1,52 @@
 const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
+const session = require('express-session');
+const path = require('path');
+const logger = require('morgan');
+const passport = require('passport');
+const bodyParser = require('body-parser');
 const db = require("./db/models");
+const routes = require('./routes');
+
 const app = express();
+const PORT = process.env.PORT || 8080;
 
-const corsOptions = {
-  origin: "http://localhost:8081"
-};
 
-app.use(cors(corsOptions));
+// Serve static files from the React app build directory
+app.use(express.static(path.join(__dirname + "/build")))
 
-// parse requests of content-type - application/json
+// Express boilerplate middleware
+// =============================================
+app.use(logger('dev'));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// parse requests of content-type - application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: true }));
+// Express session middleware
+// =============================================
+app.use(session({ secret: 'keyboard cat', resave: true, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
 
-//sync database
-db.sequelize.sync({force: true}).then(() => {
-  console.log('Drop and Resync Db');
+
+// Routing
+// =============================================
+app.use('/api', routes);
+
+// Everything that is not an api request is sent to index.html
+// for client side routing.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
 });
 
-
-// simple route
-app.get("/", (req, res) => {
-  res.json({ message: "Welcome to app" });
-});
-
-// set port, listen for requests
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}.`);
-});
+// Sync sequelize models then start Express app
+// =============================================
+db.sequelize.sync({ force: false })
+  .then(() => {
+    console.log('\n*************************************');
+    console.log(`${process.env.DB_DATABASE} database connected`);
+  })
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`App listening on PORT ${PORT}`);
+      console.log('*************************************\n');
+    });
+  });
