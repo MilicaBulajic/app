@@ -1,66 +1,49 @@
-import React, { useState, useContext } from 'react';
-import { AuthContext } from '../../AuthContext';
-import Axios from 'axios';
+import React, { useContext, useState } from "react";
+import { useForm } from "react-hook-form";
+import UserContext from "../../context/UserContext";
+import apiServer from "../../service/apiServer";
 
-const LoginForm = props => {
+const LoginForm = () => {
+  const { setAuth, setEmail, setUserId } = useContext(UserContext);
+  const { register, handleSubmit, errors } = useForm();
+  const [errorMessage, setErrorMessage] = useState("");
 
-    const { setIsAuth } = useContext(AuthContext)
-    const emptyCreds = { emailInput: '', passwordInput: '' }
-    const errorMessage = 'invalid credentials'
-    const [formData, setFormData] = useState(emptyCreds)
-    const [credsAreInvalid, setCredsAreInvalid] = useState('')
+  const onSubmit = async ({ name, email, password }) => {
+    try {
+      const res = await apiServer.post("/signup", { name, email, password });
+      window.location.href = "/signup/onboard";
+      setErrorMessage("");
 
-    const handleInputChange = event => {
-        event.preventDefault()
-        const { name, value } = event.target
-        setFormData({ ...formData, [name]: value });
+      setEmail(res.data.email);
+      setUserId(res.data.id);
+    } catch (err) {
+      console.log(err.status);
+      setErrorMessage("Something went wrong with registering");
     }
+  };
 
-    const handleFormSubmit = event => {
-        event.preventDefault()
-        const inputCreds = {
-            email: formData.emailInput,
-            password: formData.passwordInput
-        }
-        login(inputCreds)
-        setFormData(emptyCreds)
-    }
-
-    const login = loginCreds => {
-        Axios.post('/api/auth/login', loginCreds)
-            .then(user => {
-                console.log("login response ", user)
-                setIsAuth(true)
-            })
-            .catch(err => {
-                setCredsAreInvalid(errorMessage)
-                console.log(err)
-            })
-    }
-
-    return (
-        <form onSubmit={handleFormSubmit}>
-                <p>Email address</p>
-                <input name="emailInput" type="email" placeholder="Enter email" value={formData.emailInput} onChange={handleInputChange} />
-
-                <p>Password</p>
-                <input name="passwordInput" type="password" placeholder="Password" value={formData.passwordInput} onChange={handleInputChange} />
-                <p>
-                    {credsAreInvalid}
-                </p>
-            <button variant="primary" type="submit">
-                Submit
-            </button>
-            <button  onClick={e => {
-                e.preventDefault();
-                props.history.push('/signup')
-            }}>Signup</button>
-            <button onClick={e => {
-                e.preventDefault();
-                props.history.push('/')
-            }}>Home</button>
-        </form>
-    )
-}
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div>
+        <div>
+          <label htmlFor="name"></label>
+          <input name="name" type="name" placeholder="Name"></input>
+        </div>
+        <label htmlFor="email">Email</label>
+        <input
+          {...register("email", { required: true })}
+          name="email"
+          type="email"
+          placeholder="Email address"
+        ></input>
+      </div>
+      <div>
+        <label htmlFor="password">Password</label>
+        <input name="password" type="password" placeholder="password"></input>
+      </div>
+      <button type="submit">Login</button>
+    </form>
+  );
+};
 
 export default LoginForm;
